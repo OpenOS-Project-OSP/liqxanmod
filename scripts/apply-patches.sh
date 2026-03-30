@@ -66,7 +66,25 @@ apply_series() {
     fi
 
     # --forward skips hunks already present in the tree (exit 0).
-    # Only fail on genuine conflicts (exit 1 with rejects).
+    # If the patch encodes a stable-point-release version (e.g. v6.19.10-lqx2.patch)
+    # that the tree already satisfies, skip it rather than failing.
+    local patch_name
+    patch_name=$(basename "${patch_path}")
+    local patch_kver=""
+    if [[ "${patch_name}" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)- ]]; then
+      patch_kver="${BASH_REMATCH[1]}"
+    fi
+
+    if [[ -n "${patch_kver}" ]]; then
+      local tree_kver
+      tree_kver=$(make -s -C "${KERNEL_SRC}" kernelversion 2>/dev/null | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+')
+      if [[ "${patch_kver}" == "${tree_kver}" ]]; then
+        log WARN "patch targets ${patch_kver} which matches tree version — skipping: ${line}"
+        (( skipped++ )) || true
+        continue
+      fi
+    fi
+
     if ! patch -p1 --forward -d "${KERNEL_SRC}" < "${patch_path}" 2>/dev/null; then
       # Check whether any .rej files were created (genuine conflict)
       if find "${KERNEL_SRC}" -name '*.rej' -newer "${patch_path}" | grep -q .; then
