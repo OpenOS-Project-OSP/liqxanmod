@@ -76,16 +76,18 @@ jobs:
             libncurses-dev dwarves pahole curl git jq \
             shellcheck
 
-      - name: Resolve Liquorix version
-        id: lqx_ver
-        run: |
-          ver=$(bash scripts/resolve-lqx-version.sh)
-          echo "version=${ver}" >> "$GITHUB_OUTPUT"
-
       - name: Fetch XanMod source
         run: bash kernel/fetch.sh ${{ matrix.branch }}
         env:
           XANMOD_NO_API: "0"
+
+      - name: Resolve Liquorix version
+        id: lqx_ver
+        run: |
+          kmaj=$(make -s -C kernel/src kernelversion 2>/dev/null \
+            | grep -oE '^[0-9]+\.[0-9]+' || true)
+          ver=$(bash scripts/resolve-lqx-version.sh "${kmaj}")
+          echo "version=${ver}" >> "$GITHUB_OUTPUT"
 
       - name: Fetch Liquorix patches
         if: matrix.mode != 'xanmod'
