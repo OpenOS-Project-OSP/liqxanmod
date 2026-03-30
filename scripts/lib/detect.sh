@@ -84,7 +84,7 @@ detect_distro() {
   # ID_LIKE fallback
   case "${os_id_like}" in
     *alpine*)            echo "alpine";    return ;;
-    *arch*|*archlinux*)  echo "arch";      return ;;
+    *archlinux*|*arch*)  echo "arch";      return ;;
     *gentoo*)            echo "gentoo";    return ;;
     *fedora*|*rhel*|*centos*)
       # Distinguish Fedora vs RHEL derivatives by ID
@@ -162,7 +162,7 @@ detect_workload_profile() {
   # Server (headless, long uptime)
   local uptime_sec
   uptime_sec=$(awk '{print int($1)}' /proc/uptime 2>/dev/null || echo 0)
-  if [[ "${uptime_sec}" -gt 3600 ]] && ! [[ -n "${DISPLAY:-}" ]]; then
+  if [[ "${uptime_sec}" -gt 3600 ]] && [[ -z "${DISPLAY:-}" ]]; then
     echo "server"; return
   fi
 
