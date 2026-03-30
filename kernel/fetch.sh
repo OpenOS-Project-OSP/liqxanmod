@@ -25,10 +25,10 @@ SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/src"
 # ── Hardcoded fallbacks ───────────────────────────────────────────────────────
 # Update when XanMod cuts a new release series.
 declare -A BRANCH_FALLBACK=(
-  [MAIN]="6.12"
-  [EDGE]="6.12"
-  [LTS]="6.6"
-  [RT]="6.12-rt"
+  [MAIN]="6.19"
+  [EDGE]="6.19"
+  [LTS]="6.12"
+  [RT]="6.18-rt"
 )
 
 # ── Resolve branch versions from GitLab API ───────────────────────────────────
