@@ -65,16 +65,18 @@ apply_series() {
       continue
     fi
 
-    # Try to apply; on failure, attempt 3-way merge before aborting
-    if ! patch -p1 --dry-run -d "${KERNEL_SRC}" < "${patch_path}" &>/dev/null; then
-      log WARN "patch does not apply cleanly, attempting 3-way merge: ${line}"
-      if ! patch -p1 --merge -d "${KERNEL_SRC}" < "${patch_path}"; then
-        log ERROR "patch failed (conflict markers left in tree): ${line}"
+    # --forward skips hunks already present in the tree (exit 0).
+    # Only fail on genuine conflicts (exit 1 with rejects).
+    if ! patch -p1 --forward -d "${KERNEL_SRC}" < "${patch_path}" 2>/dev/null; then
+      # Check whether any .rej files were created (genuine conflict)
+      if find "${KERNEL_SRC}" -name '*.rej' -newer "${patch_path}" | grep -q .; then
+        log ERROR "patch failed with rejects: ${line}"
         log ERROR "Resolve conflicts in ${KERNEL_SRC}, then re-run with --no-fetch."
         exit 1
       fi
-    else
-      patch -p1 -d "${KERNEL_SRC}" < "${patch_path}"
+      log WARN "patch already applied (skipped): ${line}"
+      (( skipped++ )) || true
+      continue
     fi
     (( applied++ )) || true
   done < "${series_file}"
