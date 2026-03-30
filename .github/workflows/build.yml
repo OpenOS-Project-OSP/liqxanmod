@@ -107,18 +107,19 @@ jobs:
 
       - name: Merge config fragments
         run: |
-          MERGE="${PWD}/kernel/src/scripts/kconfig/merge_config.sh"
-          FRAGS=(configs/base/x86-64-v2.config)
+          REPO_ROOT="${PWD}"
+          MERGE="${REPO_ROOT}/kernel/src/scripts/kconfig/merge_config.sh"
+          FRAGS=("${REPO_ROOT}/configs/base/x86-64-v2.config")
           case "${{ matrix.mode }}" in
-            xanmod)   FRAGS+=(configs/features/xanmod.config) ;;
-            liquorix) FRAGS+=(configs/features/liquorix.config) ;;
+            xanmod)   FRAGS+=("${REPO_ROOT}/configs/features/xanmod.config") ;;
+            liquorix) FRAGS+=("${REPO_ROOT}/configs/features/liquorix.config") ;;
             hybrid|auto)
-              FRAGS+=(configs/features/xanmod.config)
-              FRAGS+=(configs/features/liquorix.config)
-              FRAGS+=(configs/features/hybrid.config)
+              FRAGS+=("${REPO_ROOT}/configs/features/xanmod.config")
+              FRAGS+=("${REPO_ROOT}/configs/features/liquorix.config")
+              FRAGS+=("${REPO_ROOT}/configs/features/hybrid.config")
               ;;
           esac
-          FRAGS+=(configs/features/no-debug.config)
+          FRAGS+=("${REPO_ROOT}/configs/features/no-debug.config")
           cd kernel/src
           bash "${MERGE}" -m .config "${FRAGS[@]}"
           make ARCH=x86 olddefconfig
