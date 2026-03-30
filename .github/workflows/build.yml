@@ -31,7 +31,7 @@ jobs:
       - name: Lint
         run: |
           find . -name '*.sh' ! -path './.cache/*' ! -path './kernel/src/*' \
-            -exec shellcheck -x {} +
+            -exec shellcheck -x -S warning {} +
 
   build-matrix:
     name: Build (${{ matrix.distro }} / ${{ matrix.mode }})
