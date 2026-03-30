@@ -49,30 +49,35 @@ PATCH_SRC="${EXTRACT_DIR}/linux-liquorix/debian/patches"
   exit 1
 }
 
+stage_patches() {
+  local prefix="${1}"   # e.g. "zen" or "lqx"
+  local dest="${PATCHES_DIR}/${prefix}"
+  mkdir -p "${dest}"
+
+  # grep exits 1 when no lines match; that is not an error here
+  local entries
+  entries=$(grep -P "^${prefix}/" "${PATCH_SRC}/series" 2>/dev/null) || true
+
+  while IFS= read -r p; do
+    [[ -z "${p}" ]] && continue
+    local src="${PATCH_SRC}/${p}"
+    local fname
+    fname=$(basename "${p}")
+    local dst="${dest}/${fname}"
+    [[ -f "${src}" ]] && cp "${src}" "${dst}"
+  done <<< "${entries}"
+
+  # Write series index (strip the prefix/ component)
+  printf '%s\n' "${entries}" | sed "s|^${prefix}/||" \
+    | grep -v '^$' > "${dest}/series" || true
+}
+
 # Stage zen/ patches
 log INFO "Staging zen/ patches"
-mkdir -p "${PATCHES_DIR}/zen"
-grep -P '^zen/' "${PATCH_SRC}/series" 2>/dev/null | while IFS= read -r p; do
-  src="${PATCH_SRC}/${p}"
-  dst="${PATCHES_DIR}/zen/$(basename "${p}")"
-  [[ -f "${src}" ]] && cp "${src}" "${dst}"
-done
-
-# Write zen series file
-grep -P '^zen/' "${PATCH_SRC}/series" 2>/dev/null \
-  | sed 's|^zen/||' > "${PATCHES_DIR}/zen/series" || true
+stage_patches zen
 
 # Stage lqx/ patches
 log INFO "Staging lqx/ patches"
-mkdir -p "${PATCHES_DIR}/lqx"
-grep -P '^lqx/' "${PATCH_SRC}/series" 2>/dev/null | while IFS= read -r p; do
-  src="${PATCH_SRC}/${p}"
-  dst="${PATCHES_DIR}/lqx/$(basename "${p}")"
-  [[ -f "${src}" ]] && cp "${src}" "${dst}"
-done
-
-# Write lqx series file
-grep -P '^lqx/' "${PATCH_SRC}/series" 2>/dev/null \
-  | sed 's|^lqx/||' > "${PATCHES_DIR}/lqx/series" || true
+stage_patches lqx
 
 log INFO "Liquorix patches staged: zen=$(wc -l < "${PATCHES_DIR}/zen/series" 2>/dev/null || echo 0) lqx=$(wc -l < "${PATCHES_DIR}/lqx/series" 2>/dev/null || echo 0)"
