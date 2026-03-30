@@ -1,33 +1,36 @@
 #!/usr/bin/env bash
 # scripts/resolve-lqx-version.sh — resolve the latest Liquorix/Zen kernel version
 #
-# Queries the damentz/liquorix-package GitHub releases API and prints the
-# most recent KERNEL_MAJOR-LQX_REL string (e.g. "6.12.1-1").
+# Queries the damentz/liquorix-package GitHub tags API and prints the most
+# recent KERNEL_MAJOR-LQX_REL string (e.g. "6.19-6").
 # Falls back to a hardcoded value if the API is unreachable.
 #
-# Output format: KERNEL_MAJOR-LQX_REL  (e.g. 6.12.1-1)
+# Output format: KERNEL_MAJOR-LQX_REL  (e.g. 6.19-6)
 
 set -euo pipefail
 
-FALLBACK_VERSION="6.12.1-1"
-API_URL="https://api.github.com/repos/damentz/liquorix-package/releases/latest"
+FALLBACK_VERSION="6.19-6"
+# Liquorix publishes tags only — no GitHub Releases
+TAGS_API="https://api.github.com/repos/damentz/liquorix-package/tags?per_page=10"
 
 if ! command -v curl &>/dev/null; then
   echo "${FALLBACK_VERSION}"
   exit 0
 fi
 
-response=$(curl -sf --max-time 10 "${API_URL}" 2>/dev/null) || {
+response=$(curl -sf --max-time 10 "${TAGS_API}" 2>/dev/null) || {
   echo "${FALLBACK_VERSION}"
   exit 0
 }
 
-# Tag format is typically "MAJOR-REL" e.g. "6.12.1-1"
+# Tags are returned newest-first; pick the first one matching MAJOR-REL format
 tag=""
 if command -v jq &>/dev/null; then
-  tag=$(echo "${response}" | jq -r '.tag_name // empty' 2>/dev/null)
+  tag=$(echo "${response}" | jq -r '.[].name' 2>/dev/null \
+    | grep -E '^[0-9]+\.[0-9]+-[0-9]+$' | head -1)
 else
-  tag=$(echo "${response}" | grep -o '"tag_name":"[^"]*"' | cut -d'"' -f4)
+  tag=$(echo "${response}" | grep -o '"name":"[^"]*"' | cut -d'"' -f4 \
+    | grep -E '^[0-9]+\.[0-9]+-[0-9]+$' | head -1)
 fi
 
 if [[ -n "${tag}" ]]; then
